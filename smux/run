@@ -1,0 +1,4 @@
+#!/bin/bash
+SDKROOT=/Volumes/Xcode11M245l_m17A405_m19A420_i17A438a_t17J434_w17R438a_b17P415_FastSim_Boost_39GB/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.Internal.sdk/
+
+swift -frontend -sdk $SDKROOT -interpret $(dirname $0)/${STEP:-stepA_smux}.swift "${@}"
