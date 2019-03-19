@@ -106,12 +106,16 @@ class Reader {
 		return t;
 	}
 
+	class func verbose(_ s: String) -> Void {
+//		print("VERBOSE: \(s)");
+	}
+
 	class func read_str(_ s: String) -> MalType {
 		let t = tokenize(s);
 		let r = Reader(t);
 		let f = read_form(r);
 
-//		print("Parsed out as: \(f)");
+		verbose("Parsed out as: \(f)");
 
 		return f;
 	}
@@ -161,7 +165,7 @@ class Reader {
 		while (true) {
 			let t = r.peek();
 			if (t == nil) {
-				print("Parse error: \(r)");
+				verbose("Parse error: \(r)");
 				break;
 			}
 			if (t!._string == ")") {
@@ -179,8 +183,28 @@ class Reader {
 	}
 
 	class func tokenize(_ s: String) -> [Token] {
-//		let str = "[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\\\.|[^\\\\\"])*\"?|;.*|[^\\s\\[\\]{}('\"`,;)]*)";
-		let str = "[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\\\.|[^\\\\\"])*\"?|;.*|[^\\s\\[\\]{}('\"`,;)]*)";
+		//		let str = "[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\\\.|[^\\\\\"])*\"?|;.*|[^\\s\\[\\]{}('\"`,;)]*)";
+
+
+		let str = "[\\s,]*"
+		+ "("
+			+ "~@"
+			+ "|"
+			+ "[\\[\\]{}()'`~^@]"
+			+ "|"
+			+ "\""
+				+ "("
+					+ "?:\\\\."
+					+ "|"
+					+ "[^\\\\\"]"
+				+ ")*"
+			+ "\"?"
+			+ "|"
+			+ ";.*"
+			+ "|"
+			+ "[^\\s\\[\\]{}('\"`,;)]*"
+		+ ")";
+
 		let n = try! NSRegularExpression.init(pattern: str, options: []);
 		let matches = n.matches(in: s, options: [], range: NSRange(location:0, length:s.count));
 
@@ -189,7 +213,7 @@ class Reader {
 		for m in matches {
 			let ss = (s as NSString).substring(with: m.range);
 			let st = ss.trimmingCharacters(in: CharacterSet.whitespaces);
-//			print("MATCH[\(st)]");
+			verbose("MATCH[\(st)]");
 			tokens.append(Token.parse(st));
 		}
 
