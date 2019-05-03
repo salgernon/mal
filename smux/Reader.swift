@@ -32,84 +32,6 @@ class Token : CustomDebugStringConvertible {
 	}
 };
 
-class MalType : CustomDebugStringConvertible {
-	var debugDescription: String {
-		return "__empty_type__";
-	}
-
-	func toString() -> String {
-		return "### BAD ####";
-	}
-};
-
-class MalNil : MalType {
-	override var debugDescription: String {
-		return "nil_type";
-	}
-	override func toString() -> String {
-		return "nil";
-	}
-};
-
-class MalQuote : MalType {
-	override var debugDescription: String {
-		return "quote";
-	}
-	override func toString() -> String {
-		return "'";
-	}
-}
-
-class MalQuasiQuote : MalType {
-	override var debugDescription: String {
-		return "quasiquote";
-	}
-	override func toString() -> String {
-		return "`";
-	}
-}
-
-class MalString : MalType {
-	init(_ s: String) {
-		_string = s;
-	}
-	var _string : String;
-	override var debugDescription: String {
-		return "string_type[\(_string)]";
-	}
-	override func toString() -> String {
-		return _string;
-	}
-}
-
-class MalList : MalType {
-	init(_ e: [MalType]) {
-		_elems = e;
-	}
-	var _elems : [MalType];
-	override var debugDescription: String {
-		let s = (_elems as NSArray).componentsJoined(by: ",");
-		return "list_type[\(s)]";
-	}
-	override func toString() -> String {
-		var s : String? = nil;
-
-		for e in _elems {
-			if (s == nil) {
-				s = e.toString();
-			} else {
-				s = s! + " " + e.toString();
-			}
-		}
-
-		if (s == nil) {
-			return "()";
-		} else {
-			return "(" + s! + ")";
-		}
-	}
-};
-
 class Reader {
 	init(_ t: [Token]) {
 		_tokens = t;
@@ -169,8 +91,11 @@ class Reader {
 			return MalNil();
 		}
 
-		if (l!._string == "(") {
-			return read_list(r);
+		let opening = l!._string;
+		if (opening == "(") {
+			return read_list(r, eol:")");
+		} else if (opening == "[") {
+			return read_list(r, eol:"]");
 		} else {
 			return read_atom(r);
 		}
@@ -186,7 +111,7 @@ class Reader {
 	// This mutually recursive definition between read_list and read_form is
 	// what allows lists to contain lists.
 
-	class func read_list(_ r: Reader) -> MalType {
+	class func read_list(_ r: Reader, eol: String) -> MalType {
 		var l : [MalType] = [];
 
 		_ = r.next();
@@ -198,14 +123,18 @@ class Reader {
 				print("Unexpected EOF");
 				break;
 			}
-			if (t!._string == ")") {
+			if (t!._string == eol) {
 				_ = r.next();
 				break;
 			}
 			l.append(read_form(r));
 		}
 
-		return MalList(l);
+		if (eol == ")") {
+			return MalList(l);
+		} else {
+			return MalVector(l);
+		}
 	}
 
 	class func read_atom(_ r: Reader) -> MalType {
@@ -225,13 +154,31 @@ class Reader {
 
 		verbose("read atom: " + s);
 
-		if (s.compare("'") == ComparisonResult.orderedSame) {
+		switch (s) {
+		case "'":
 			return MalQuote();
-		}
-		if (s.compare("`") == ComparisonResult.orderedSame) {
+		case "`":
 			return MalQuasiQuote();
+		case MalNil.canonicalString:
+			return MalNil();
+		case MalTrue.canonicalString:
+			return MalTrue();
+		case MalFalse.canonicalString:
+			return MalFalse();
+		default:
+			if (s.hasPrefix(":")) {
+				let after = s.index(after:s.startIndex);
+				let remainder = s[after...];
+				return MalKeyword(String(remainder));
+			} else {
+				let cvt = (s as NSString).integerValue;
+				if (s.compare("\(cvt)") == ComparisonResult.orderedSame) {
+					return MalScalar(cvt);
+				} else {
+					return MalString(s);
+				}
+			}
 		}
-		return MalString(s);
 	}
 
 	class func tokenize(_ s: String) -> [Token] {
@@ -269,18 +216,11 @@ class Reader {
 			let st = ss.trimmingCharacters(in: CharacterSet.init(charactersIn: ", \t\n\r"));
 
 			if (st.count > 0) {
-				verbose("MATCH[\(st)]");
+				verbose("MATCH>>>\(st)<<<");
 				tokens.append(Token.parse(st));
 			}
 		}
 
 		return tokens;
-	}
-};
-
-class Printer {
-	class func pr_str(_ m: MalType) {
-		let s = m.toString();
-		print("\(s)");
 	}
 };
