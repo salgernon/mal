@@ -8,6 +8,14 @@
 
 import Foundation
 
+public class StderrOutputStream: TextOutputStream {
+	public func write(_ string: String) {
+		fputs(string, stderr)
+	}
+}
+
+public var errStream = StderrOutputStream()
+
 class Token : CustomDebugStringConvertible {
 	init(_ s: String) {
 		_string = s;
@@ -42,6 +50,24 @@ class MalNil : MalType {
 		return "nil";
 	}
 };
+
+class MalQuote : MalType {
+	override var debugDescription: String {
+		return "quote";
+	}
+	override func toString() -> String {
+		return "'";
+	}
+}
+
+class MalQuasiQuote : MalType {
+	override var debugDescription: String {
+		return "quasiquote";
+	}
+	override func toString() -> String {
+		return "`";
+	}
+}
 
 class MalString : MalType {
 	init(_ s: String) {
@@ -107,7 +133,10 @@ class Reader {
 	}
 
 	class func verbose(_ s: String) -> Void {
-//		print("VERBOSE: \(s)");
+		let x = getenv("MALVERBOSE");
+		if (x != nil) {
+			print("#\n# " + s + "\n#\n", to: &errStream);
+		}
 	}
 
 	class func read_str(_ s: String) -> MalType {
@@ -165,7 +194,8 @@ class Reader {
 		while (true) {
 			let t = r.peek();
 			if (t == nil) {
-				verbose("Parse error: \(r)");
+				verbose("Parse error: EOF: \(r)");
+				print("Unexpected EOF");
 				break;
 			}
 			if (t!._string == ")") {
@@ -179,19 +209,42 @@ class Reader {
 	}
 
 	class func read_atom(_ r: Reader) -> MalType {
-		return MalString(r.next()._string);
+		let s = r.next()._string;
+
+		let l = (s as NSString).length;
+		if (l >= 2) {
+			let ch = (s as NSString).substring(to: 1);
+			if (ch == "\"") {
+				let ch2 = (s as NSString).substring(from: l - 1);
+				if (ch2 != "\"") {
+					print("Atom EOF");
+					return MalNil();
+				}
+			}
+		}
+
+		verbose("read atom: " + s);
+
+		if (s.compare("'") == ComparisonResult.orderedSame) {
+			return MalQuote();
+		}
+		if (s.compare("`") == ComparisonResult.orderedSame) {
+			return MalQuasiQuote();
+		}
+		return MalString(s);
 	}
 
 	class func tokenize(_ s: String) -> [Token] {
 		//		let str = "[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\\\.|[^\\\\\"])*\"?|;.*|[^\\s\\[\\]{}('\"`,;)]*)";
 
+		let or = "|";
 
 		let str = "[\\s,]*"
 		+ "("
 			+ "~@"
-			+ "|"
+			+ or
 			+ "[\\[\\]{}()'`~^@]"
-			+ "|"
+			+ or
 			+ "\""
 				+ "("
 					+ "?:\\\\."
@@ -199,9 +252,9 @@ class Reader {
 					+ "[^\\\\\"]"
 				+ ")*"
 			+ "\"?"
-			+ "|"
+			+ or
 			+ ";.*"
-			+ "|"
+			+ or
 			+ "[^\\s\\[\\]{}('\"`,;)]*"
 		+ ")";
 
@@ -212,9 +265,13 @@ class Reader {
 
 		for m in matches {
 			let ss = (s as NSString).substring(with: m.range);
-			let st = ss.trimmingCharacters(in: CharacterSet.whitespaces);
-			verbose("MATCH[\(st)]");
-			tokens.append(Token.parse(st));
+//			let sa = ss.trimmingCharacters(in: CharacterSet.whitespaces);
+			let st = ss.trimmingCharacters(in: CharacterSet.init(charactersIn: ", \t\n\r"));
+
+			if (st.count > 0) {
+				verbose("MATCH[\(st)]");
+				tokens.append(Token.parse(st));
+			}
 		}
 
 		return tokens;
