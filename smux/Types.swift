@@ -8,7 +8,7 @@
 
 import Foundation
 
-class MalType : CustomDebugStringConvertible {
+class MalType : CustomDebugStringConvertible, Hashable, Equatable {
 	var debugDescription: String {
 		return "__empty_type__";
 	}
@@ -19,6 +19,14 @@ class MalType : CustomDebugStringConvertible {
 
 	func toReadable() -> String {
 		return toString();
+	}
+
+	func hash(into hasher: inout Hasher) {
+		hasher.combine(self.toString());
+	}
+
+	static func == (lhs: MalType, rhs: MalType) -> Bool {
+		return lhs.toString().compare(rhs.toString()) == ComparisonResult.orderedSame;
 	}
 };
 
@@ -139,6 +147,13 @@ class MalFalse : MalBool {
 	}
 }
 
+protocol MalCollectable {
+	static var openDelim : String { get };
+	static var closeDelim : String { get };
+
+	init(_ e: [MalType]);
+}
+
 class MalCollection : MalType {
 	init(_ e: [MalType], opening:String, closing:String) {
 		_elems = e;
@@ -151,7 +166,8 @@ class MalCollection : MalType {
 
 	override var debugDescription: String {
 		let s = (_elems as NSArray).componentsJoined(by: ",");
-		return "col_type[\(s)]";
+		let ll = type(of:self);
+		return "col_type_\(ll)[\(s)]";
 	}
 
 	override func toString() -> String {
@@ -173,14 +189,51 @@ class MalCollection : MalType {
 	}
 }
 
-class MalVector : MalCollection {
-	init(_ e: [MalType]) {
-		super.init(e, opening: "[", closing: "]");
+class MalVector : MalCollection, MalCollectable {
+	static let openDelim = "[";
+	static let closeDelim = "]";
+
+	required init(_ e: [MalType]) {
+		super.init(e, opening:MalVector.openDelim, closing:MalVector.closeDelim);
 	}
 }
 
-class MalList : MalCollection {
-	init(_ e: [MalType]) {
-		super.init(e, opening: "(", closing: ")");
+class MalHash : MalCollection, MalCollectable {
+	static let openDelim = "{";
+	static let closeDelim = "}";
+
+	required init(_ e: [MalType]) {
+		super.init(e, opening:MalHash.openDelim, closing:MalHash.closeDelim);
+
+		let count = e.count;
+
+		guard count % 2 == 0 else {
+			abort()
+		}
+
+		var i = 0;
+		while (i < count) {
+			let key = e[i + 0];
+			let val = e[i + 1];
+
+			i += 2;
+
+			_map[key] = val;
+		}
+	}
+
+	var _map : [MalType : MalType] = [:];
+
+	override func toString() -> String {
+		return "{ \(_map) }";
+	}
+}
+
+class MalList : MalCollection, MalCollectable {
+	static let openDelim = "(";
+	static let closeDelim = ")";
+
+	required init(_ e: [MalType]) {
+		super.init(e, opening:MalList.openDelim, closing:MalList.closeDelim);
 	}
 }
