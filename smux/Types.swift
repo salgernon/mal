@@ -147,22 +147,15 @@ class MalFalse : MalBool {
 	}
 }
 
-protocol MalCollectable {
-	static var openDelim : String { get };
-	static var closeDelim : String { get };
-
-	init(_ e: [MalType]);
-}
-
 class MalCollection : MalType {
-	init(_ e: [MalType], opening:String, closing:String) {
+	class func delims() -> [String] {
+		return [];
+	}
+
+	required init(_ e: [MalType]) {
 		_elems = e;
-		_opening = opening;
-		_closing = closing;
 	}
 	var _elems : [MalType];
-	var _opening : String;
-	var _closing : String;
 
 	override var debugDescription: String {
 		let s = (_elems as NSArray).componentsJoined(by: ",");
@@ -181,29 +174,33 @@ class MalCollection : MalType {
 			}
 		}
 
+		let delims = type(of:self).delims();
+
 		if (s == nil) {
-			return _opening + _closing;
+			return delims[0] + delims[1];
 		} else {
-			return _opening + s! + _closing;
+			return delims[0] + s! + delims[1];
 		}
 	}
 }
 
-class MalVector : MalCollection, MalCollectable {
-	static let openDelim = "[";
-	static let closeDelim = "]";
+class MalVector : MalCollection {
+	override class func delims() -> [String] {
+		return [ "[", "]" ];
+	}
 
 	required init(_ e: [MalType]) {
-		super.init(e, opening:MalVector.openDelim, closing:MalVector.closeDelim);
+		super.init(e);
 	}
 }
 
-class MalHash : MalCollection, MalCollectable {
-	static let openDelim = "{";
-	static let closeDelim = "}";
+class MalHash : MalCollection {
+	override class func delims() -> [String] {
+		return [ "{", "}" ];
+	}
 
 	required init(_ e: [MalType]) {
-		super.init(e, opening:MalHash.openDelim, closing:MalHash.closeDelim);
+		super.init(e);
 
 		let count = e.count;
 
@@ -225,15 +222,17 @@ class MalHash : MalCollection, MalCollectable {
 	var _map : [MalType : MalType] = [:];
 
 	override func toString() -> String {
-		return "{ \(_map) }";
+		let delims = type(of:self).delims();
+		return delims[0] + "\(_map)" + delims[1];
 	}
 }
 
-class MalList : MalCollection, MalCollectable {
-	static let openDelim = "(";
-	static let closeDelim = ")";
+class MalList : MalCollection {
+	override class func delims() -> [String] {
+		return [ "(", ")" ];
+	}
 
 	required init(_ e: [MalType]) {
-		super.init(e, opening:MalList.openDelim, closing:MalList.closeDelim);
+		super.init(e);
 	}
 }

@@ -93,23 +93,16 @@ class Reader {
 
 		let opening = l!._string;
 
-		switch (opening) {
-		case MalList.openDelim:
-			return read_list(r, eol:MalList.closeDelim, maker: {
-				(l : [MalType]) -> MalCollection in return MalList(l);
-			});
-//			return read_list_t<MalList>(r);
-		case MalVector.openDelim:
-			return read_list(r, eol:MalVector.closeDelim, maker: {
-				(l : [MalType]) -> MalCollection in return MalVector(l);
-			});
-		case MalHash.openDelim:
-			return read_list(r, eol:MalHash.closeDelim, maker: {
-				(l : [MalType]) -> MalCollection in return MalHash(l);
-			});
-		default:
-			return read_atom(r);
+		let kinds : [MalCollection.Type] = [ MalList.self, MalVector.self, MalHash.self ];
+
+		for k in kinds {
+			let d = k.delims();
+			if (d[0] == opening) {
+				return read_list(r, kind:k);
+			}
 		}
+
+		return read_atom(r);
 	}
 
 	// Add the function read_list to reader.qx. This function will
@@ -122,8 +115,9 @@ class Reader {
 	// This mutually recursive definition between read_list and read_form is
 	// what allows lists to contain lists.
 
-	class func read_list(_ r: Reader, eol: String, maker: ([MalType]) -> MalCollection) -> MalType {
+	class func read_list(_ r: Reader, kind:MalCollection.Type) -> MalType {
 		var l : [MalType] = [];
+		let eol = kind.delims()[1];
 
 		_ = r.next();
 
@@ -141,31 +135,9 @@ class Reader {
 			l.append(read_form(r));
 		}
 
-		return maker(l);
+		return kind.init(l);
 	}
 
-//	class func read_list_t<TT:MalCollectable>(_ r: Reader) -> MalCollectable {
-//		var l : [MalType] = [];
-//
-//		_ = r.next();
-//
-//		while (true) {
-//			let t = r.peek();
-//			if (t == nil) {
-//				verbose("Parse error: EOF: \(r)");
-//				print("Unexpected EOF");
-//				break;
-//			}
-//			if (t!._string == TT.closeDelim) {
-//				_ = r.next();
-//				break;
-//			}
-//			l.append(read_form(r));
-//		}
-//
-//		return TT(l);
-//	}
-//
 	class func read_atom(_ r: Reader) -> MalType {
 		let s = r.next()._string;
 
