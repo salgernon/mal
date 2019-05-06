@@ -32,6 +32,14 @@ class Token : CustomDebugStringConvertible {
 	}
 };
 
+enum ReaderError : Error {
+	case unexepectedEOF(missing:String);
+	case fatalError;
+	case badForm(r:Reader);
+	case oddHashElements(elems:[MalType]);
+	case emptyLine;
+}
+
 class Reader {
 	init(_ t: [Token]) {
 		_tokens = t;
@@ -61,10 +69,17 @@ class Reader {
 		}
 	}
 
-	class func read_str(_ s: String) -> MalType {
+	class func read_str(_ s: String) throws -> MalType {
 		let t = tokenize(s);
+
+		if (t.count == 0) {
+			throw ReaderError.emptyLine;
+		}
+
 		let r = Reader(t);
-		let f = read_form(r);
+
+		let f : MalType;
+		try f = read_form(r);
 
 		verbose("Parsed out as: \(f)");
 
@@ -84,11 +99,10 @@ class Reader {
 	// list/array of other mal types.
 
 
-	class func read_form(_ r: Reader) -> MalType {
+	class func read_form(_ r: Reader) throws -> MalType {
 		let l = r.peek();
-		guard l != nil else {
-			print("Bad form: \(r)");
-			return MalNil();
+		guard (l != nil) else {
+			throw ReaderError.badForm(r:r)
 		}
 
 		let opening = l!._string;
@@ -98,7 +112,7 @@ class Reader {
 		for k in kinds {
 			let d = k.delims();
 			if (d[0] == opening) {
-				return read_list(r, kind:k);
+				return try read_list(r, kind:k);
 			}
 		}
 
@@ -115,7 +129,7 @@ class Reader {
 	// This mutually recursive definition between read_list and read_form is
 	// what allows lists to contain lists.
 
-	class func read_list(_ r: Reader, kind:MalCollection.Type) -> MalType {
+	class func read_list(_ r: Reader, kind:MalCollection.Type) throws -> MalType {
 		var l : [MalType] = [];
 		let eol = kind.delims()[1];
 
@@ -123,19 +137,23 @@ class Reader {
 
 		while (true) {
 			let t = r.peek();
-			if (t == nil) {
-				verbose("Parse error: EOF: \(r)");
-				print("Unexpected EOF");
-				break;
+
+			guard t != nil else {
+				throw ReaderError.unexepectedEOF(missing:eol);
 			}
+
 			if (t!._string == eol) {
 				_ = r.next();
 				break;
 			}
-			l.append(read_form(r));
+
+
+			let v : MalType;
+			try v = read_form(r);
+			l.append(v);
 		}
 
-		return kind.init(l);
+		return try kind.init(l);
 	}
 
 	class func read_atom(_ r: Reader) -> MalType {
@@ -216,7 +234,7 @@ class Reader {
 //			let sa = ss.trimmingCharacters(in: CharacterSet.whitespaces);
 			let st = ss.trimmingCharacters(in: CharacterSet.init(charactersIn: ", \t\n\r"));
 
-			if (st.count > 0) {
+			if (st.count > 0 && st[st.startIndex] != ";") {
 				verbose("MATCH>>>\(st)<<<");
 				tokens.append(Token.parse(st));
 			}

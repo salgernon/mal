@@ -152,7 +152,7 @@ class MalCollection : MalType {
 		return [];
 	}
 
-	required init(_ e: [MalType]) {
+	required init(_ e: [MalType]) throws {
 		_elems = e;
 	}
 	var _elems : [MalType];
@@ -189,8 +189,8 @@ class MalVector : MalCollection {
 		return [ "[", "]" ];
 	}
 
-	required init(_ e: [MalType]) {
-		super.init(e);
+	required init(_ e: [MalType]) throws {
+		try super.init(e);
 	}
 }
 
@@ -199,13 +199,13 @@ class MalHash : MalCollection {
 		return [ "{", "}" ];
 	}
 
-	required init(_ e: [MalType]) {
-		super.init(e);
+	required init(_ e: [MalType]) throws {
+		try super.init(e);
 
 		let count = e.count;
 
 		guard count % 2 == 0 else {
-			abort()
+			throw ReaderError.oddHashElements(elems:e);
 		}
 
 		var i = 0;
@@ -232,7 +232,7 @@ class MalList : MalCollection {
 		return [ "(", ")" ];
 	}
 
-	required init(_ e: [MalType]) {
-		super.init(e);
+	required init(_ e: [MalType]) throws {
+		try super.init(e);
 	}
 }

@@ -18,19 +18,40 @@ class Slisp {
 	}
 
 	func runt(_ s: String) -> Void {
-		let m = Reader.read_str(s);
-		Printer.pr_str(m);
+		do {
+			let m : MalType;
+
+			try m = Reader.read_str(s);
+
+			Printer.pr_str(m);
+		} catch (ReaderError.emptyLine) {
+			// just a line with a comment
+		} catch (ReaderError.badForm(let r)) {
+			print("Bad form: \(r)");
+		} catch (ReaderError.fatalError) {
+			print("Fatal error");
+		} catch (ReaderError.unexepectedEOF(let missing)) {
+			print("Unspected EOF, missing \(missing)");
+		} catch {
+			print("Utter failure evaluating \(s)");
+		}
 	}
 	
 	func run() -> Void {
-		while (true) {
+		var running = true;
+
+		while (running) {
 			print("user> ", terminator:"");
 			let s = readLine(strippingNewline:true);
+
 			if (s != nil) {
-				runt(s!);
-			} else {
-				print("! empty string, exiting");
-				break;
+				let sb = s!;
+
+				if (sb.count == 1 && sb.compare("quit") == ComparisonResult.orderedSame) {
+					running = false;
+				} else {
+					runt(sb);
+				}
 			}
 		}
 	}

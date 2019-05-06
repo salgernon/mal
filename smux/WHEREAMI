@@ -20,7 +20,7 @@ translated into their printed representations (the reverse of the
 reader). The PRINT function in the main program should call pr_str
 with print_readably set to true.
 
-... Add error checking to your reader functions to make sure parens are
+√ ... Add error checking to your reader functions to make sure parens are
 properly matched. Catch and print these errors in your main loop. If
 your language does not have try/catch style bubble up exception
 handling, then you will need to add explicit error handling to your
@@ -31,25 +31,24 @@ into other forms during the read phase. Refer to
 tests/step1_read_print.mal for the form that these macros should take
 (they are just simple transformations of the token stream).
 
-Add support for the other mal types: keyword, vector, hash-map.
+√ Add support for the other mal types: keyword, vector, hash-map.
 
-... ok hash-map: a hash-map is an associative data structure that maps
-strings to other mal values. If you implement keywords as prefixed
-strings, then you only need a native associative data structure which
-supports string keys. Clojure allows any value to be a hash map key,
-but the base functionality in mal is to support strings and keyword
-keys. Because of the representation of hash-maps as an alternating
-sequence of keys and values, you can probably use the same reader
-function for hash-maps as lists and vectors with parameters to
+√ ... ok hash-map: a hash-map is an associative data structure that
+maps strings to other mal values. If you implement keywords as
+prefixed strings, then you only need a native associative data
+structure which supports string keys. Clojure allows any value to be a
+hash map key, but the base functionality in mal is to support strings
+and keyword keys. Because of the representation of hash-maps as an
+alternating sequence of keys and values, you can probably use the same
+reader function for hash-maps as lists and vectors with parameters to
 indicate the starting and ending tokens. The odd tokens are then used
 for keys with the corresponding even tokens as the values.
 
-Add
-comment support to your reader. The tokenizer should ignore tokens
-that start with ";". Your read_str function will need to properly
-handle when the tokenizer returns no values. The simplest way to do
-this is to return nil mal value. A cleaner option (that does not print
-nil at the prompt is to throw a special exception that causes the main
-loop to simply continue at the beginning of the loop without calling
-rep.
+√ Add comment support to your reader. The tokenizer should ignore
+tokens that start with ";". Your read_str function will need to
+properly handle when the tokenizer returns no values. The simplest way
+to do this is to return nil mal value. A cleaner option (that does not
+print nil at the prompt is to throw a special exception that causes
+the main loop to simply continue at the beginning of the loop without
+calling rep.
 
