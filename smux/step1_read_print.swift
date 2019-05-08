@@ -1,6 +1,6 @@
 import Foundation;
 
-class Slisp {
+class S0lisp {
 	func READ(_ s: String) -> String {
 		return s;
 	}
@@ -44,14 +44,10 @@ class Slisp {
 			print("user> ", terminator:"");
 			let s = readLine(strippingNewline:true);
 
-			if (s != nil) {
-				let sb = s!;
-
-				if (sb.count == 1 && sb.compare("quit") == ComparisonResult.orderedSame) {
-					running = false;
-				} else {
-					runt(sb);
-				}
+			if (s == nil || s!.compare("quit") == ComparisonResult.orderedSame) {
+				running = false;
+			} else {
+				runt(s!);
 			}
 		}
 	}

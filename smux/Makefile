@@ -10,6 +10,10 @@ obj/step1_read_print.out: step1_read_print.swift Reader.swift Types.swift Printe
 	mkdir -p obj/
 	swiftc -v -o $@ $< Types.swift Reader.swift Printer.swift main.swift 
 
+obj/step2_eval.out: step2_eval.swift Reader.swift Types.swift Printer.swift main.swift
+	mkdir -p obj/
+	swiftc -v -o $@ $< Types.swift Reader.swift Printer.swift main.swift 
+
 clean:
 	rm -rf obj/
 

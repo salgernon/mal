@@ -110,6 +110,9 @@ class MalScalar : MalType {
 	override func toString() -> String {
 		return "\(_value)";
 	}
+	func scalarValue() -> Int {
+		return _value;
+	}
 }
 
 class MalBool : MalType {
@@ -155,8 +158,17 @@ class MalCollection : MalType {
 	required init(_ e: [MalType]) throws {
 		_elems = e;
 	}
+
+	override init() {
+		_elems = [];
+	}
+
 	var _elems : [MalType];
 
+	func count() -> Int {
+		return _elems.count;
+	}
+	
 	override var debugDescription: String {
 		let s = (_elems as NSArray).componentsJoined(by: ",");
 		let ll = type(of:self);
@@ -181,6 +193,30 @@ class MalCollection : MalType {
 		} else {
 			return delims[0] + s! + delims[1];
 		}
+	}
+
+	func map2(_ by: (MalType) throws -> MalType) -> MalList {
+		do {
+			let l = try _elems.map { (m:MalType) -> MalType in
+				return try by(m);
+			};
+
+			return try MalList(l);
+		} catch {
+			return MalList()
+		}
+
+	}
+
+	func car() -> MalType {
+		if (count() == 0) {
+			return MalNil();
+		}
+		return _elems[0];
+	}
+
+	func cdr() throws -> MalList {
+		return try MalList(Array(_elems.suffix(from: 1)));
 	}
 }
 
@@ -220,11 +256,6 @@ class MalHash : MalCollection {
 	}
 
 	var _map : [MalType : MalType] = [:];
-
-	override func toString() -> String {
-		let delims = type(of:self).delims();
-		return delims[0] + "\(_map)" + delims[1];
-	}
 }
 
 class MalList : MalCollection {
@@ -234,5 +265,9 @@ class MalList : MalCollection {
 
 	required init(_ e: [MalType]) throws {
 		try super.init(e);
+	}
+
+	override init() {
+		super.init();
 	}
 }

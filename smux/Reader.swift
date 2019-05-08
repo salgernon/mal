@@ -33,11 +33,12 @@ class Token : CustomDebugStringConvertible {
 };
 
 enum ReaderError : Error {
-	case unexepectedEOF(missing:String);
-	case fatalError;
-	case badForm(r:Reader);
+	case unexepectedEOF(_ missing:String);
+	case fatalError(_ msg:String);
+	case badForm(_ r:Reader);
 	case oddHashElements(elems:[MalType]);
 	case emptyLine;
+	case undefinedSymbol(_ s:MalType);
 }
 
 class Reader {
@@ -102,7 +103,7 @@ class Reader {
 	class func read_form(_ r: Reader) throws -> MalType {
 		let l = r.peek();
 		guard (l != nil) else {
-			throw ReaderError.badForm(r:r)
+			throw ReaderError.badForm(r);
 		}
 
 		let opening = l!._string;
@@ -139,7 +140,7 @@ class Reader {
 			let t = r.peek();
 
 			guard t != nil else {
-				throw ReaderError.unexepectedEOF(missing:eol);
+				throw ReaderError.unexepectedEOF("missing \(eol)");
 			}
 
 			if (t!._string == eol) {
