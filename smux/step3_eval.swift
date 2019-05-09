@@ -1,7 +1,6 @@
 import Foundation;
 
-typealias SEnv2 = [ MalSymbol : MalClosure ];
-class Slisp2 {
+class Slisp {
 	func READ(_ s: String) throws -> MalType {
 		return try Reader.read_str(s)
 	}
@@ -31,13 +30,9 @@ class Slisp2 {
 		return false;
 	}
 
-	func eval_ast(_ ast:MalType, env:SEnv2) throws -> MalType {
+	func eval_ast(_ ast:MalType, env:SEnv) throws -> MalType {
 		if (isSymbolType(ast)) {
-			let r = env[ast as! MalSymbol];
-			guard (r != nil) else {
-				throw ReaderError.undefinedSymbol(ast);
-			}
-			return r!;
+			return try env.get(symbol:(ast as! MalSymbol));
 		}
 
 		if (isCollectionType(ast)) {
@@ -51,7 +46,7 @@ class Slisp2 {
 		return ast;
 	}
 
-	func EVAL(_ ast: MalType, env:SEnv2) throws -> MalType {
+	func EVAL(_ ast: MalType, env:SEnv) throws -> MalType {
 		if (isCollectionType(ast) == false) {
 			return try eval_ast(ast, env:env);
 		}
@@ -59,6 +54,21 @@ class Slisp2 {
 		let asList = (ast as! MalCollection);
 		if (asList.count() == 0) {
 			return ast;
+		}
+
+		let firstElem = asList.car();
+		if (isSymbolType(firstElem)) {
+			let s = firstElem.toString();
+
+			if (s.compare("def!") == ComparisonResult.orderedSame) {
+				let defs = asList.cdr();
+				let sym = (defs.car() as! MalSymbol);
+				let rest = defs.cdr();
+
+				env.set(symbol: sym, value: try EVAL(rest, env:env));
+
+				return sym;
+			}
 		}
 
 		let newList = try eval_ast(asList, env:env);
@@ -87,18 +97,11 @@ class Slisp2 {
 		Printer.pr_str(s);
 	}
 
-	func rep(_ s: String, env: SEnv2) throws -> Void {
+	func rep(_ s: String, env:SEnv) throws -> Void {
 		try PRINT(EVAL(READ(s), env:env));
 	}
 
-	func runt(_ s: String) -> Void {
-		let env : SEnv2 = [
-			MalString("+") : MalClosure_Add(),
-			MalString("-") : MalClosure_Sub(),
-			MalString("*") : MalClosure_Mul(),
-			MalString("/") : MalClosure_Div()
-		];
-
+	func runt(_ s: String, env:SEnv) -> Void {
 		do {
 			// list { sym("+")  1 2 }
 			try rep(s, env:env);
@@ -118,14 +121,23 @@ class Slisp2 {
 	func run() -> Void {
 		var running = true;
 
+		let env = SEnv(nil);
+
+		env.set(symbol: MalString("+"), value: MalClosure_Add());
+		env.set(symbol: MalString("-"), value: MalClosure_Sub());
+		env.set(symbol: MalString("*"), value: MalClosure_Mul());
+		env.set(symbol: MalString("/"), value: MalClosure_Div());
+
 		while (running) {
 			print("user> ", terminator:"");
 			let s = readLine(strippingNewline:true);
 
 			if (s == nil || s!.compare("quit") == ComparisonResult.orderedSame) {
 				running = false;
+			} else if (s!.compare("env?") == ComparisonResult.orderedSame) {
+				print("Env: \(env)");
 			} else {
-				runt(s!);
+				runt(s!, env:env);
 			}
 		}
 	}

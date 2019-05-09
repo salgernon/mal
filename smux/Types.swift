@@ -299,3 +299,60 @@ class MalList : MalCollection {
 		return try! MalList(l ?? []);
 	}
 }
+
+class MalClosure : MalType {
+	func apply(_ l: MalList) throws -> MalType {
+		return l;
+	}
+}
+
+class MalScalarApplyier : MalClosure {
+	override func apply(_ l: MalList) throws -> MalType {
+		let car = l.car();
+		guard type(of:car) == MalScalar.self else {
+			throw ReaderError.fatalError("expected scalar as car of \(l)");
+		}
+
+		let cdr = l.cdr();
+		if (cdr.count() == 0) {
+			return car;
+		}
+
+		let lVal = (car as! MalScalar);
+		let rVal = try apply(cdr);
+
+		guard type(of:rVal) == MalScalar.self else {
+			throw ReaderError.fatalError("expected scalar as result of apply against \(cdr)");
+		}
+
+		return try apply(a:lVal, b:(rVal as! MalScalar));
+	}
+
+	func apply(a:MalScalar, b:MalScalar) throws -> MalScalar {
+		return MalScalar(0);
+	}
+}
+
+class MalClosure_Add : MalScalarApplyier {
+	override func apply(a:MalScalar, b:MalScalar) throws -> MalScalar {
+		return MalScalar(a.scalarValue() + b.scalarValue());
+	}
+}
+
+class MalClosure_Sub : MalScalarApplyier {
+	override func apply(a:MalScalar, b:MalScalar) throws -> MalScalar {
+		return MalScalar(a.scalarValue() - b.scalarValue());
+	}
+}
+
+class MalClosure_Mul : MalScalarApplyier {
+	override func apply(a:MalScalar, b:MalScalar) throws -> MalScalar {
+		return MalScalar(a.scalarValue() * b.scalarValue());
+	}
+}
+
+class MalClosure_Div : MalScalarApplyier {
+	override func apply(a:MalScalar, b:MalScalar) throws -> MalScalar {
+		return MalScalar(a.scalarValue() / b.scalarValue());
+	}
+}
