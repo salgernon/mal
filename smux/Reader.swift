@@ -79,8 +79,7 @@ class Reader {
 
 		let r = Reader(t);
 
-		let f : MalType;
-		try f = read_form(r);
+		let f = try read_form(r);
 
 		verbose("Parsed out as: \(f)");
 
@@ -149,12 +148,11 @@ class Reader {
 			}
 
 
-			let v : MalType;
-			try v = read_form(r);
+			let v = try read_form(r);
 			l.append(v);
 		}
 
-		return try kind.init(l);
+		return try! kind.init(l);
 	}
 
 	class func read_atom(_ r: Reader) -> MalType {

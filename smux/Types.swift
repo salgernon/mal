@@ -59,7 +59,10 @@ class MalQuasiQuote : MalType {
 	}
 }
 
-class MalString : MalType {
+class MalSymbol : MalType {
+}
+
+class MalString : MalSymbol {
 	init(_ s: String) {
 		_string = MalString.expand(s);
 	}
@@ -99,7 +102,7 @@ class MalKeyword : MalString {
 	}
 }
 
-class MalScalar : MalType {
+class MalScalar : MalSymbol {
 	init(_ s: Int) {
 		_value = s;
 	}
@@ -195,17 +198,8 @@ class MalCollection : MalType {
 		}
 	}
 
-	func map2(_ by: (MalType) throws -> MalType) -> MalList {
-		do {
-			let l = try _elems.map { (m:MalType) -> MalType in
-				return try by(m);
-			};
-
-			return try MalList(l);
-		} catch {
-			return MalList()
-		}
-
+	func map2(_ by: (MalType) throws -> MalType) -> MalType {
+		return MalNil();
 	}
 
 	func car() -> MalType {
@@ -215,8 +209,15 @@ class MalCollection : MalType {
 		return _elems[0];
 	}
 
-	func cdr() throws -> MalList {
-		return try MalList(Array(_elems.suffix(from: 1)));
+	func cdr() -> MalList {
+		switch (count()) {
+			case 0:
+				return (self as! MalList);
+			case 1:
+				return try! MalList([]);
+			default:
+				return try! MalList(Array(_elems.suffix(from: 1)));
+		}
 	}
 }
 
@@ -227,6 +228,14 @@ class MalVector : MalCollection {
 
 	required init(_ e: [MalType]) throws {
 		try super.init(e);
+	}
+
+	override func map2(_ by: (MalType) throws -> MalType) -> MalType {
+		let l = try? _elems.map { (m:MalType) -> MalType in
+			return try by(m);
+		};
+
+		return try! MalVector(l ?? []);
 	}
 }
 
@@ -256,6 +265,17 @@ class MalHash : MalCollection {
 	}
 
 	var _map : [MalType : MalType] = [:];
+
+	override func map2(_ by: (MalType) throws -> MalType) -> MalType {
+		var newMap : [MalType] = [];
+
+		_map.forEach { (key: MalType, value: MalType) in
+			newMap.append(key);
+			newMap.append(try! by(value));
+		}
+
+		return try! MalHash(newMap);
+	}
 }
 
 class MalList : MalCollection {
@@ -269,5 +289,13 @@ class MalList : MalCollection {
 
 	override init() {
 		super.init();
+	}
+
+	override func map2(_ by: (MalType) throws -> MalType) -> MalType {
+		let l = try? _elems.map { (m:MalType) -> MalType in
+			return try by(m);
+		};
+
+		return try! MalList(l ?? []);
 	}
 }
