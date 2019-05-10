@@ -1,6 +1,6 @@
 import Foundation;
 
-class Slisp {
+class SLisp0 {
 	func READ(_ s: String) -> String {
 		return s;
 	}

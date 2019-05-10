@@ -62,13 +62,12 @@ class SLisp3 {
 
 			if (s.compare("def!") == ComparisonResult.orderedSame) {
 				let defs = asList.cdr();
-				let sym = (defs.car() as! MalSymbol);
-				let rest = defs.cdr();
-				let val = try EVAL(rest, env:env);
+				let sym = (defs[0] as! MalSymbol);
+				let val = try EVAL(defs[1], env:env);
 
 				env.set(symbol: sym, value: val);
 
-				return sym;
+				return try EVAL(sym, env:env);
 			}
 		}
 

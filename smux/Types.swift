@@ -219,6 +219,18 @@ class MalCollection : MalType {
 				return try! MalList(Array(_elems.suffix(from: 1)));
 		}
 	}
+
+	subscript(elem: Int) -> MalType {
+		get {
+			return _elems[elem];
+		}
+	}
+
+	func pop() -> ( MalType, MalList ) {
+		let head = _elems[0];
+		let rest = cdr();
+		return ( head, rest );
+	}
 }
 
 class MalVector : MalCollection {
