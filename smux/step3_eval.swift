@@ -32,7 +32,11 @@ class SLisp3 {
 
 	func eval_ast(_ ast:MalType, env:SEnv) throws -> MalType {
 		if (isSymbolType(ast)) {
-			return try env.get(symbol:(ast as! MalSymbol));
+			let r = env.find(symbol:(ast as! MalSymbol));
+			guard (r != nil) else {
+				throw ReaderError.undefinedSymbol(ast);
+			}
+			return r!;
 		}
 
 		if (isCollectionType(ast)) {
@@ -68,6 +72,24 @@ class SLisp3 {
 				env.set(symbol: sym, value: val);
 
 				return try EVAL(sym, env:env);
+			}
+
+
+			if (s.compare("let*") == ComparisonResult.orderedSame) {
+				let nenv = SEnv(env);
+				let kvs = (asList[1] as! MalCollection);
+
+				let c = kvs.count();
+				var i = 0;
+				while (i < c) {
+					let k = (kvs[i] as! MalSymbol);
+					i += 1;
+					let v = try EVAL(kvs[i], env:nenv);
+					i += 1;
+					nenv.set(symbol: k, value: v);
+				}
+
+				return try EVAL(asList[2], env:nenv);
 			}
 		}
 

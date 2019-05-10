@@ -18,7 +18,7 @@ class SEnv : CustomStringConvertible {
 	func find(symbol:MalSymbol) -> MalType? {
 		var r = _env[symbol];
 		if (r == nil && _outer != nil) {
-			r = _outer!.find(symbol:symbol);
+			r = try _outer!.find(symbol:symbol);
 		}
 		return r;
 	}
