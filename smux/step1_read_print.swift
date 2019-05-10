@@ -1,6 +1,6 @@
 import Foundation;
 
-class S0lisp {
+class SLisp1 {
 	func READ(_ s: String) -> String {
 		return s;
 	}

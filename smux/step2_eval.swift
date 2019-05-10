@@ -1,7 +1,8 @@
 import Foundation;
 
 typealias SEnv2 = [ MalSymbol : MalClosure ];
-class Slisp2 {
+
+class SLisp2 {
 	func READ(_ s: String) throws -> MalType {
 		return try Reader.read_str(s)
 	}

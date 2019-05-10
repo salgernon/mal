@@ -1,5 +1,5 @@
 
-let t = Slisp();
+let t = SLisp1();
 print("Hello \(t)");
 //t.runt("(+ 1 2)");
 t.run();

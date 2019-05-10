@@ -1,6 +1,6 @@
 import Foundation;
 
-class Slisp {
+class SLisp3 {
 	func READ(_ s: String) throws -> MalType {
 		return try Reader.read_str(s)
 	}
@@ -64,8 +64,9 @@ class Slisp {
 				let defs = asList.cdr();
 				let sym = (defs.car() as! MalSymbol);
 				let rest = defs.cdr();
+				let val = try EVAL(rest, env:env);
 
-				env.set(symbol: sym, value: try EVAL(rest, env:env));
+				env.set(symbol: sym, value: val);
 
 				return sym;
 			}
