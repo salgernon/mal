@@ -199,7 +199,7 @@ class MalCollection : MalType {
 	}
 
 	func map2(_ by: (MalType) throws -> MalType) -> MalType {
-		return MalNil();
+		return self;
 	}
 
 	func car() -> MalType {
@@ -243,11 +243,23 @@ class MalVector : MalCollection {
 	}
 
 	override func map2(_ by: (MalType) throws -> MalType) -> MalType {
+#if BB
 		let l = try? _elems.map { (m:MalType) -> MalType in
 			return try by(m);
 		};
 
 		return try! MalVector(l ?? []);
+#endif
+		let c = count();
+		var i = 0;
+		var newElems : [MalType] = [];
+		while (i < c) {
+			let cur = _elems[i];
+			i += 1;
+			let val = try! by(cur);
+			newElems.append(val);
+		}
+		return try! MalVector(newElems);
 	}
 }
 
@@ -304,11 +316,27 @@ class MalList : MalCollection {
 	}
 
 	override func map2(_ by: (MalType) throws -> MalType) -> MalType {
+#if BB
 		let l = try? _elems.map { (m:MalType) -> MalType in
 			return try by(m);
 		};
 
 		return try! MalList(l ?? []);
+#else
+		let c = count();
+		var i = 0;
+		var newElems : [MalType] = [];
+		while (i < c) {
+			let cur = _elems[i];
+			i += 1;
+			let val = try? by(cur);
+			guard (val != nil) else {
+				throw ReaderError.fatalError("failed to evaluate \(cur)");
+			}
+			newElems.append(val);
+		}
+		return try! MalVector(newElems);
+#endif
 	}
 }
 
